@@ -1,0 +1,62 @@
+name: Python
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  Windows:
+    runs-on: 'windows-latest'
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+    - name: Install python deps
+      run: |
+        pip install pytest numpy
+        # don't use CMake 3.25.0 https://gitlab.kitware.com/cmake/cmake/-/issues/23975
+        pip3 install cmake==3.24.0
+    - name: Build
+      run: |
+        pip3 install cmake==3.24.0
+        python setup.py build
+        python setup.py install --user
+    - name: Test
+      run: python -m pytest --ignore docs --ignore dlib
+
+  Ubuntu:
+    runs-on: 'ubuntu-latest'
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+    - name: Install python deps
+      run: pip install pytest numpy
+    - name: Build
+      run: |
+        python setup.py build
+        python setup.py install --user
+    - name: Test
+      run: python -m pytest --ignore docs --ignore dlib
+
+# Disabled for now since something is going sideways with python packages on github actions
+# MacOS:
+#   runs-on: 'macos-latest'
+#   steps:
+#   - uses: actions/checkout@v3
+#   - uses: actions/setup-python@v4
+#   - name: Install python deps
+#     run: pip3 install pytest numpy
+#   - name: Build
+#     run: |
+#       python3 setup.py build
+#       python3 setup.py install --user
+#   - name: Test
+#     run: python3 -m pytest --ignore docs --ignore dlib
+

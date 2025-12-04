@@ -1,0 +1,249 @@
+name: C++
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+defaults:
+  run:
+    shell: bash
+    working-directory: dlib/test
+
+jobs:
+  ubuntu-latest-gcc-default-cmake-3-8-ffmpeg5:
+    runs-on: 'ubuntu-latest'
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install libwebp-dev make yasm
+        
+    - name: Cache cmake 3.8.0
+      uses: actions/cache@v3
+      id: cache-cmake-download
+      with:
+        # cache this folder:
+        path: ~/cmake-3.8.0-Linux-x86_64
+        key: cmake-3.8.0_try3
+        
+    - run: |
+        # Get the minimum version of cmake dlib supports
+        wget https://cmake.org/files/v3.8/cmake-3.8.0-Linux-x86_64.tar.gz
+        tar -xf cmake-3.8.0-Linux-x86_64.tar.gz -C ~
+      if: steps.cache-cmake-download.outputs.cache-hit != 'true'
+
+    - name: Cache FFmpeg 5
+      uses: actions/cache@v3
+      id: cache-ffmpeg5
+      with:
+        path: /home/runner/ffmpeg-n5.1.3_installation
+        key: ffmpeg-n5.1.3_try4
+        
+    - name: Build FFmpeg 5
+      if: steps.cache-ffmpeg5.outputs.cache-hit != 'true'
+      run: |
+        wget https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n5.1.3.tar.gz
+        tar -xf n5.1.3.tar.gz
+        cd FFmpeg-n5.1.3
+        ./configure --prefix=/home/runner/ffmpeg-n5.1.3_installation --disable-doc --disable-programs
+        make -j4
+        make install
+        cd ..
+        
+    - name: Configure
+      run: |
+        mkdir build
+        cd build
+        ~/cmake-3.8.0-Linux-x86_64/bin/cmake -DCMAKE_PREFIX_PATH=/home/runner/ffmpeg-n5.1.3_installation .. 
+    
+    - name: Build just tests
+      run: |
+        cd build
+        make -j4 dtest
+        
+    - name: Test
+      run: build/dtest --runall -q
+      
+    - name: Build examples, etc
+      run: |
+        cd build
+        make -j2
+
+  ubuntu-latest-gcc-11-blas:
+    runs-on: 'ubuntu-latest'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install libwebp-dev libavformat-dev libavcodec-dev libavdevice-dev libavfilter-dev libswresample-dev libswscale-dev libavutil-dev 
+        sudo apt install libopenblas-dev liblapack-dev
+    - name: Install gcc 11
+      run: |
+        sudo apt install gcc-11 g++-11
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 110 --slave /usr/bin/g++ g++ /usr/bin/g++-11 --slave /usr/bin/gcov gcov /usr/bin/gcov-11
+    - name: Configure
+      run: cmake ${{ github.workspace }}/dlib/test -B build
+    - name: Build just tests
+      run: cmake --build build --config Release --target dtest --parallel 4
+    - name: Test
+      run: build/dtest --runall -q
+    - name: Build examples, etc
+      run: cmake --build build --config Release --parallel 2
+
+    # Test the BLAS bindings
+    - name: Configure BLAS binding tests
+      run: cmake ${{ github.workspace }}/dlib/test/blas_bindings -B build_blas_bindings
+    - name: Build blas binding tests
+      run: cmake --build build_blas_bindings --config Debug --parallel 4
+    - name: Test BLAS bindings
+      run: build_blas_bindings/dtest --runall -q
+
+  ubuntu-20_04-gcc-7:
+    runs-on: 'ubuntu-20.04'
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install libwebp-dev make yasm 
+
+    - name: Install gcc 7
+      run: |
+        sudo apt install gcc-7 g++-7
+
+    - name: Cache FFmpeg 3.2.18
+      uses: actions/cache@v3
+      id: cache-ffmpeg3
+      with:
+        path: /home/runner/ffmpeg-n3.2.18_installation
+        key: ffmpeg-n3.2.18_try1
+        
+    - name: Build FFmpeg 3.2.18
+      if: steps.cache-ffmpeg3.outputs.cache-hit != 'true'
+      run: |
+        wget https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n3.2.18.tar.gz
+        tar -xf n3.2.18.tar.gz
+        cd FFmpeg-n3.2.18
+        ./configure --prefix=/home/runner/ffmpeg-n3.2.18_installation --disable-doc --disable-programs
+        make -j4
+        make install
+        cd ..
+
+    - name: Configure
+      run: |
+        export CC=/usr/bin/gcc-7
+        export CXX=/usr/bin/g++-7
+        cmake ${{ github.workspace }}/dlib/test -B build -DCMAKE_PREFIX_PATH=/home/runner/ffmpeg-n3.2.18_installation
+
+    - name: Build just tests
+      run: cmake --build build --config Release --target dtest --parallel 4
+
+    - name: Test
+      run: build/dtest --runall -q
+
+    - name: Build examples, etc
+      run: cmake --build build --config Release --parallel 2
+
+    # Test cmake scrips can build standalone dlib as a shared library
+    - name: Configure dlib as shared library  
+      run: cmake ${{ github.workspace }}/dlib -B build_dlib_shared -DBUILD_SHARED_LIBS=1 -DCMAKE_PREFIX_PATH=/home/runner/ffmpeg-n3.2.18_installation
+
+    - name: Build dlib as shared library
+      run: cmake --build build_dlib_shared --parallel 4
+
+  ubuntu-latest-clang-default-avx:
+    runs-on: 'ubuntu-latest'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install libwebp-dev libavformat-dev libavcodec-dev libavdevice-dev libavfilter-dev libswresample-dev libswscale-dev libavutil-dev 
+    - name: Configure
+      run: |
+        export CC=/usr/bin/clang
+        export CXX=/usr/bin/clang++
+        cmake ${{ github.workspace }}/dlib/test -B build -DUSE_AVX_INSTRUCTIONS=1
+    - name: Build just tests
+      run: cmake --build build --config Release --target dtest --parallel 4
+    - name: Test
+      run: build/dtest --runall -q
+    - name: Build examples, etc
+      run: cmake --build build --config Release --parallel 2
+
+  ubuntu-latest-clang-13:
+    runs-on: 'ubuntu-latest'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install libwebp-dev libavformat-dev libavcodec-dev libavdevice-dev libavfilter-dev libswresample-dev libswscale-dev libavutil-dev 
+    - name: Install clang 13
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 13
+    - name: Configure
+      run: |
+        export CC=/usr/bin/clang-13
+        export CXX=/usr/bin/clang++-13
+        cmake ${{ github.workspace }}/dlib/test -B build
+    - name: Build just tests
+      run: cmake --build build --config Release --target dtest --parallel 4
+    - name: Test
+      run: build/dtest --runall -q
+    - name: Build examples, etc
+      run: cmake --build build --config Release --parallel 2
+
+  windows-latest:
+    runs-on: 'windows-latest'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Configure
+      run: |
+        # don't use CMake 3.25.0 https://gitlab.kitware.com/cmake/cmake/-/issues/23975
+        pip3 install cmake==3.24.0
+        cmake . -B build
+    - name: Build just tests
+      run: cmake --build build --config Release --target dtest --parallel 4
+    - name: Test
+      run: build/Release/dtest.exe --runall -q
+    - name: Build ancillary tools
+      run: cmake --build build --config Release --target imglab htmlify dtoc --parallel 4
+
+  windows-2019:
+    runs-on: 'windows-2019'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Configure
+      run: |
+        # don't use CMake 3.25.0 https://gitlab.kitware.com/cmake/cmake/-/issues/23975
+        pip3 install cmake==3.24.0
+        cmake . -B build
+    - name: Build just tests
+      run: cmake --build build --config Debug --target dtest --parallel 4
+    - name: Build ancillary tools
+      run: cmake --build build --config Release --target imglab htmlify dtoc --parallel 4
+
+  macos-latest:
+    runs-on: 'macos-latest'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Configure
+      # MacOS machines often come with low quality BLAS libraries installed, so don't use those.
+      run: cmake ${{ github.workspace }}/dlib/test -B build -DDLIB_USE_BLAS=0 -DDLIB_USE_LAPACK=0
+    - name: Build just tests
+      run: cmake --build build --config Release --target dtest --parallel 4
+    - name: Test
+      run: build/dtest --runall --no_test_timer -q
+    - name: Build examples, etc
+      run: cmake --build build --config Release --parallel 2
