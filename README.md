@@ -60,6 +60,12 @@ The pre-trained vip tokens are placed in `./FaceDATA/Pretrained_VIPToken`
 We prepare the training data in Stage 3 at [this link](https://huggingface.co/datasets/Kaiqing/VIPGuard_Stage3_DATA)
 Please download the data and place them in `./FaceDATA/Training_Img`.
 
+**Please note that within each ID directory, the subfolder names differ in meaning as described below:**
+r_r_i: real (same id)
+r_r_d_i: real (different id)
+r_fs_i: face swapping (same id)
+r_efs_i: entire face synthesis (same id)
+
 ---
 
 ### Customization for Your Data
