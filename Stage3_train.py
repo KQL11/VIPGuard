@@ -251,7 +251,7 @@ def parse_arguments():
     )
 
     # Model and training configuration
-    parser.add_argument('--train_json_path', type=str, default='./FaceDATA/stage2_id0_only_cls.json',
+    parser.add_argument('--train_json_path', type=str, default='./Example/id0_only_cls.json',
                         help='Path to training dataset JSON file')
     parser.add_argument('--name', type=str, default='Amair',
                         help='VIP user name')
