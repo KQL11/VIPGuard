@@ -1,4 +1,4 @@
-# VIP DFD LLM - Visual Identity Protection for Deepfake Detection
+# Guard Me If You Know Me: Protecting Specific Face-Identity from Deepfakes
 
 <p align="center">
   <a href="https://arxiv.org/abs/2505.19582"><img src="https://img.shields.io/badge/ArXiv-B31B1B?logo=arxiv&logoColor=white" alt="ArXiv"></a>
