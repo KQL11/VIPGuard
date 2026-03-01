@@ -21,7 +21,7 @@ This is the official implementation of VIP-Guard for personalized deepfake detec
  - [x] Release the checkpoint of [VIP-Guard](https://huggingface.co/Kaiqing/VIP-Guard) pre-trained on Stage 1 and 2.
  - [x] Release the **Stage 1,2** training code.
  - [x] Release the checkpoints of **VIP Tokens** for 22 IDs.
- - [x] Release the **training dataset** on the Stage 3.
+ - [x] Release the **[training dataset](https://huggingface.co/datasets/Kaiqing/VIPGuard_Stage3_DATA)** on the Stage 3.
  - [x] Release the **inference code** of VIP-Guard.
 
 ## 🚀 Quick Start Guide
@@ -61,9 +61,13 @@ We prepare the training data in Stage 3 at [this link](https://huggingface.co/da
 Please download the data and place them in `./FaceDATA/Training_Img`.
 
 **Please note that within each ID directory, the subfolder names differ in meaning as described below:**
+
 r_r_i: real (same id)
+
 r_r_d_i: real (different id)
+
 r_fs_i: face swapping (same id)
+
 r_efs_i: entire face synthesis (same id)
 
 ---
